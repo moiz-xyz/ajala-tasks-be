@@ -1,7 +1,16 @@
+import Document from "../models/Document.js";
+
+// Helper for Role Ranking
+const ROLE_RANK = ["viewer", "editor", "admin"];
+
 export const createDocument = async (req, res) => {
   try {
+    const { title, content, requiredRole } = req.body;
     const newDoc = await Document.create({
-      title: req.body.title || "Untitled",
+      title: title || "Untitled",
+      content: content || "",
+      requiredRole: requiredRole || "viewer", // Set from FE dropdown
+      owner: req.user.id, // Taken from your Auth middleware
     });
     res.status(201).json(newDoc);
   } catch (error) {
@@ -11,7 +20,17 @@ export const createDocument = async (req, res) => {
 
 export const getDocuments = async (req, res) => {
   try {
-    const docs = await Document.find().sort({ updatedAt: -1 });
+    // Only show documents the user is allowed to see
+    const userLevel = ROLE_RANK.indexOf(req.user.role);
+
+    // Find docs where: user is owner OR user's rank >= doc's required rank
+    const docs = await Document.find({
+      $or: [
+        { owner: req.user.id },
+        { requiredRole: { $in: ROLE_RANK.slice(0, userLevel + 1) } },
+      ],
+    }).sort({ updatedAt: -1 });
+
     res.status(200).json(docs);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -20,10 +39,20 @@ export const getDocuments = async (req, res) => {
 
 export const updateDocument = async (req, res) => {
   try {
-    const { title, content } = req.body;
+    const doc = await Document.findById(req.params.id);
+    if (!doc) return res.status(404).json({ message: "Not found" });
+
+    // Only Owner or 'editor/admin' can update
+    const isOwner = doc.owner.toString() === req.user.id;
+    const canEdit = ROLE_RANK.indexOf(req.user.role) >= 1; // 1 is 'editor'
+
+    if (!isOwner && !canEdit) {
+      return res.status(403).json({ message: "No edit permissions" });
+    }
+
     const updatedDoc = await Document.findByIdAndUpdate(
       req.params.id,
-      { title, content, lastModified: Date.now() },
+      { ...req.body, lastModified: Date.now() },
       { new: true }
     );
     res.status(200).json(updatedDoc);
@@ -32,31 +61,23 @@ export const updateDocument = async (req, res) => {
   }
 };
 
+// Replaces your 'verifyDocumentAccess' with Role Verification
 export const verifyDocumentAccess = async (req, res) => {
   try {
-    const { id } = req.params;
-    const { code } = req.body; // Code sent from FE input
+    const doc = await Document.findById(req.params.id);
+    if (!doc) return res.status(404).json({ message: "Document not found" });
 
-    const doc = await Document.findById(id);
+    const isOwner = doc.owner.toString() === req.user.id;
+    const userLevel = ROLE_RANK.indexOf(req.user.role);
+    const requiredLevel = ROLE_RANK.indexOf(doc.requiredRole);
 
-    if (!doc) {
-      return res.status(404).json({ message: "Document not found" });
-    }
-
-    // If it's not private, grant access immediately
-    if (!doc.isPrivate) {
+    if (isOwner || userLevel >= requiredLevel) {
       return res.status(200).json({ authorized: true, doc });
-    }
-
-    // Check if the provided code matches
-    if (doc.accessCode === code) {
-      return res
-        .status(200)
-        .json({ authorized: true, message: "Access granted", doc });
     } else {
-      return res
-        .status(401)
-        .json({ authorized: false, message: "Incorrect code" });
+      return res.status(403).json({
+        authorized: false,
+        message: `This document is restricted to ${doc.requiredRole}s.`,
+      });
     }
   } catch (error) {
     res.status(500).json({ error: error.message });
