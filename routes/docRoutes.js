@@ -1,16 +1,24 @@
 import express from "express";
+// import {
+//   createDocument,
+//   getDocuments,
+//   updateDocument,
+//   verifyDocumentAccess,
+// } from "../controllers/docController.js";
+import { protect } from "../middlwares/auth.js";
 import {
+  verifyDocumentAccess,
   createDocument,
   getDocuments,
   updateDocument,
-  verifyDocumentAccess,
 } from "../contollers/docController.js";
 
 const router = express.Router();
 
-router.post("/", createDocument); // Create
-router.get("/", getDocuments); // List all
-router.put("/:id", updateDocument); // Update/Rename/Save content
-router.post("/:id/verify", verifyDocumentAccess);
+// All these routes now require a valid token
+router.post("/", protect, createDocument);
+router.get("/", protect, getDocuments);
+router.put("/:id", protect, updateDocument);
+router.get("/:id/verify", protect, verifyDocumentAccess);
 
 export default router;
