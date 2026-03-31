@@ -1,11 +1,11 @@
 import jwt from "jsonwebtoken"; // 1. Added missing import
-import Login from "../models/Login";
+import User from "../models/User.js";
 
 export const registerUser = async (req, res) => {
   try {
     const { email, password, role } = req.body;
 
-    const existingUser = await Login.findOne({ email });
+    const existingUser = await User.findOne({ email });
 
     if (existingUser) {
       const token = jwt.sign(
