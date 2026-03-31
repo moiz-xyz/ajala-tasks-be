@@ -10,7 +10,8 @@ export const createDocument = async (req, res) => {
       title: title || "Untitled",
       content: content || "",
       requiredRole: requiredRole || "viewer", // Set from FE dropdown
-      owner: req.user.id, // Taken from your Auth middleware
+      // owner: req.user.id, // Taken from your Auth middleware
+      owner: req.body.userId,
     });
     res.status(201).json(newDoc);
   } catch (error) {
@@ -53,7 +54,7 @@ export const updateDocument = async (req, res) => {
     const updatedDoc = await Document.findByIdAndUpdate(
       req.params.id,
       { ...req.body, lastModified: Date.now() },
-      { new: true }
+      { new: true },
     );
     res.status(200).json(updatedDoc);
   } catch (error) {
