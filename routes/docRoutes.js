@@ -11,6 +11,7 @@ import {
   createDocument,
   getDocuments,
   updateDocument,
+  getUserDocuments,
 } from "../contollers/docController.js";
 
 const router = express.Router();
@@ -19,6 +20,7 @@ const router = express.Router();
 router.post("/", protect, createDocument);
 router.get("/", protect, getDocuments);
 router.put("/:id", protect, updateDocument);
+router.get("/user/:userId", getUserDocuments);
 router.get("/:id/verify", protect, verifyDocumentAccess);
 
 export default router;

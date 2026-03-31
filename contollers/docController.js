@@ -19,6 +19,23 @@ export const createDocument = async (req, res) => {
   }
 };
 
+export const getUserDocuments = async (req, res) => {
+  try {
+    const { userId } = req.params; // Get userId from the URL parameter
+
+    if (!userId) {
+      return res.status(400).json({ message: "User ID is required" });
+    }
+
+    // Find all documents where the owner matches the userId
+    const docs = await Document.find({ owner: userId }).sort({ updatedAt: -1 });
+
+    res.status(200).json(docs);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
 export const getDocuments = async (req, res) => {
   try {
     // Only show documents the user is allowed to see
