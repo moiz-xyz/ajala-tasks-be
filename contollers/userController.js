@@ -11,7 +11,7 @@ export const registerUser = async (req, res) => {
       const token = jwt.sign(
         { id: existingUser._id, role: existingUser.role },
         process.env.JWT_SECRET,
-        { expiresIn: "30d" }
+        { expiresIn: "30d" },
       );
 
       return res.status(200).json({
@@ -34,7 +34,7 @@ export const registerUser = async (req, res) => {
     const token = jwt.sign(
       { id: newUser._id, role: newUser.role },
       process.env.JWT_SECRET,
-      { expiresIn: "30d" }
+      { expiresIn: "30d" },
     );
 
     res.status(201).json({
@@ -47,6 +47,7 @@ export const registerUser = async (req, res) => {
       },
     });
   } catch (error) {
+    console.log(error);
     res.status(500).json({ error: error.message });
   }
 };

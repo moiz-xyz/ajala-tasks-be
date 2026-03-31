@@ -10,21 +10,24 @@ export const protect = async (req, res, next) => {
     try {
       token = req.headers.authorization.split(" ")[1];
 
-      // 2. Verify token
+      // Verify token
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
+      // Attach user data to request
       req.user = {
         id: decoded.id,
         role: decoded.role,
       };
 
-      next();
+      return next(); // Return here to stop execution
     } catch (error) {
-      res.status(401).json({ message: "Not authorized, token failed" });
+      console.error("Token Error:", error.message);
+      return res.status(401).json({ message: "Not authorized, token failed" });
     }
   }
 
+  // If we reach here, it means no token was found
   if (!token) {
-    res.status(401).json({ message: "Not authorized, no token" });
+    return res.status(401).json({ message: "Not authorized, no token" });
   }
 };
