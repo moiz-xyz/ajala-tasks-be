@@ -1,15 +1,16 @@
 import mongoose from "mongoose";
+import { v4 as uuidv4 } from "uuid"; // npm install uuid
 
 const documentSchema = new mongoose.Schema(
   {
     title: { type: String, required: true },
     content: { type: String, default: "" },
+    shareId: { type: String, default: () => uuidv4() },
     requiredRole: {
       type: String,
       enum: ["admin", "editor", "viewer"],
       default: "viewer",
     },
-    // Reference to the User who created it
     owner: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",

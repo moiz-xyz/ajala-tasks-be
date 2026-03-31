@@ -1,19 +1,43 @@
 import Document from "../models/Document.js";
-
 // Helper for Role Ranking
-const ROLE_RANK = ["viewer", "editor", "admin"];
 
 export const createDocument = async (req, res) => {
   try {
     const { title, content, requiredRole } = req.body;
+
     const newDoc = await Document.create({
       title: title || "Untitled",
       content: content || "",
-      requiredRole: requiredRole || "viewer", // Set from FE dropdown
-      // owner: req.user.id, // Taken from your Auth middleware
-      owner: req.body.userId,
+      requiredRole: requiredRole || "viewer",
+      owner: req.user.id,
     });
-    res.status(201).json(newDoc);
+
+    // Return data matching your DocData interface
+    res.status(201).json({
+      ...newDoc._doc,
+      userRole: "owner", // Creator is always the owner
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+export const getDocumentById = async (req, res) => {
+  try {
+    const doc = await Document.findById(req.params.id);
+    if (!doc) return res.status(404).json({ message: "Not found" });
+
+    let userRole = "viewer";
+    if (doc.owner.toString() === req.user.id) {
+      userRole = "owner";
+    } else if (req.user.role === "admin" || req.user.role === "editor") {
+      userRole = req.user.role;
+    }
+
+    res.status(200).json({
+      ...doc._doc,
+      userRole, // FE uses this to show/hide 'Save' buttons or 'Settings'
+    });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -54,7 +78,7 @@ export const updateDocument = async (req, res) => {
     const updatedDoc = await Document.findByIdAndUpdate(
       req.params.id,
       { ...req.body, lastModified: Date.now() },
-      { new: true },
+      { new: true }
     );
     res.status(200).json(updatedDoc);
   } catch (error) {
